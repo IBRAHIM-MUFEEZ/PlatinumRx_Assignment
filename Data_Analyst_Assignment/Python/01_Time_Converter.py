@@ -7,7 +7,7 @@ def convert_minutes(minutes):
 
     if hours > 0:
         if hours == 1:
-            return f"{hours}hr {mins}minutes"
+            return f"{hour}hr {mins}minutes"
         else:
             return f"{hours} hrs {mins} minutes"
     else:
