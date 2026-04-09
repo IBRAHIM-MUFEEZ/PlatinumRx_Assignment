@@ -1,26 +1,25 @@
-select u.user_id, b.room_no 
-from users u left join bookings b
-on u.user_id = b.user_id
-where (u.user_id ,  b.booking_date) in 
-(
-SELECT user_id, max(booking_date)
-from bookings
-group by user_id
-);
-
+SELECT u.user_id, b.room_no
+FROM users u
+LEFT JOIN (
+    SELECT user_id, room_no,
+           ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY booking_date DESC) AS rn
+    FROM bookings
+) b
+ON u.user_id = b.user_id AND b.rn = 1;
+-------------------------------------------------------------------------------------------------------------------
 
 select b.booking_id , sum(bc.item_quantity * i.item_rate) AS total_billing_amount
 from bookings b inner join booking_commercials bc on b.booking_id = bc.booking_id
 inner join items i on bc.item_id = i.item_id
 where year(b.booking_date) = 2021 and month(b.booking_date)=11
 group by b.booking_id;
-
+-----------------------------------------------------------------------------------------------------------------
 select bc.bill_id , sum(bc.item_quantity * i.item_rate) As bill_amount
 from booking_commercials bc inner join items i on bc.item_id = i.item_id
 where year(bc.bill_date)=2021 and month(bc.bill_date)=10 group by bc.bill_id
 having bill_amount >1000;
 
-
+------------------------------------------------------------------------------------------------------
 
 
 with monthly_items as (
@@ -59,7 +58,7 @@ where rank_least = 1
 order by bill_month, order_type;
 
 
-
+---------------------------------------------------------------------------------------------------------------------------------
 with customer_monthly_bills as (
     select 
         month(bc.bill_date) as month,

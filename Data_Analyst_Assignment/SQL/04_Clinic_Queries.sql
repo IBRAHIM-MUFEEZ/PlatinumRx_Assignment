@@ -1,3 +1,4 @@
+use ibrahimdb;
 select sales_channel, sum(amount) as total_revenue
 from clinic_sales
 where year(datetime) = 2021
@@ -10,24 +11,42 @@ group by uid
 order by total_spent desc
 limit 10;
 --------------------------------------------------------------------
-select 
-    month(cs.datetime) as month,
-    sum(cs.amount) as revenue,
-    coalesce(sum(e.amount), 0) as expense,
-    sum(cs.amount) - coalesce(sum(e.amount), 0) as profit,
-    case 
-        when (sum(cs.amount) - coalesce(sum(e.amount), 0)) > 0 
-        then 'profitable'
-        else 'not-profitable'
-    end as status
-from clinic_sales cs
-left join expenses e 
-    on cs.cid = e.cid 
-    and month(cs.datetime) = month(e.datetime)
-    and year(e.datetime) = 2021
-where year(cs.datetime) = 2021
-group by month(cs.datetime)
-order by month;
+WITH revenue AS (
+    SELECT 
+        cid,
+        YEAR(datetime) AS yr,
+        MONTH(datetime) AS mn,
+        SUM(amount) AS total_revenue
+    FROM clinic_sales
+    WHERE YEAR(datetime) = 2021
+    GROUP BY cid, yr, mn
+),
+expenses_cte AS (
+    SELECT 
+        cid,
+        YEAR(datetime) AS yr,
+        MONTH(datetime) AS mn,
+        SUM(amount) AS total_expense
+    FROM expenses
+    WHERE YEAR(datetime) = 2021
+    GROUP BY cid, yr, mn
+)
+
+SELECT 
+    r.mn AS month,
+    SUM(r.total_revenue) AS revenue,
+    COALESCE(SUM(e.total_expense), 0) AS expense,
+    SUM(r.total_revenue) - COALESCE(SUM(e.total_expense), 0) AS profit,
+    CASE 
+        WHEN SUM(r.total_revenue) - COALESCE(SUM(e.total_expense), 0) > 0 
+        THEN 'profitable'
+        ELSE 'not-profitable'
+    END AS status
+FROM revenue r
+LEFT JOIN expenses_cte e 
+    ON r.cid = e.cid AND r.yr = e.yr AND r.mn = e.mn
+GROUP BY r.mn
+ORDER BY r.mn;
 -----------------------------------------------------
 
 select *
